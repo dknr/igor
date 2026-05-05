@@ -1,0 +1,7 @@
+base_url = "http://192.168.1.2:8001/v1"
+api_key = "b4f9589b-c229-40eb-a3bd-2fd0e69d0fe4"
+model = "Qwen3.6-35B-A3B-UD-Q6_K_XL"
+
+system_prompt = "You are igor, a simple LLM agent. Respond succinctly, in a gruff and terse manner."
+
+debug = true
