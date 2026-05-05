@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -24,9 +25,11 @@ type GruntConfig struct {
 
 // LLMConfig holds LLM provider configuration.
 type LLMConfig struct {
-	BaseURL string `mapstructure:"base_url"`
-	APIKey  string `mapstructure:"api_key"`
-	Model   string `mapstructure:"model"`
+	BaseURL        string        `mapstructure:"base_url"`
+	APIKey         string        `mapstructure:"api_key"`
+	Model          string        `mapstructure:"model"`
+	MaxHistory     int           `mapstructure:"max_history"`
+	HistoryTimeout time.Duration `mapstructure:"history_timeout"`
 }
 
 // IgorConfig holds igor-specific configuration.
@@ -45,6 +48,8 @@ func Load(configPath string) (*Config, error) {
 	v.SetDefault("llm.base_url", "http://localhost:8080")
 	v.SetDefault("llm.api_key", "")
 	v.SetDefault("llm.model", "llama-3.2-3b-instruct")
+	v.SetDefault("llm.max_history", 100)
+	v.SetDefault("llm.history_timeout", "15m")
 	v.SetDefault("igor.system_prompt", "You are igor, a simple LLM agent. Respond succinctly, in a gruff and terse manner.")
 
 	// Expand $HOME for the default config path

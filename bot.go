@@ -17,14 +17,16 @@ type Bot struct {
 	client     *grunt.Client
 	mention    string
 	llmClient  *llm.Client
+	historyMgr *HistoryManager
 }
 
 // NewBot creates a new Bot instance.
-func NewBot(serverAddr, userID, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string) *Bot {
+func NewBot(serverAddr, userID, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string, maxHistory int, historyTimeout time.Duration) *Bot {
 	return &Bot{
 		client: grunt.NewClient(serverAddr, userID),
 		mention: mention,
 		llmClient: llm.NewClient(llmBaseURL, llmModel, llmAPIKey, systemPrompt),
+		historyMgr: NewHistoryManager(maxHistory, historyTimeout),
 	}
 }
 
@@ -52,6 +54,12 @@ func (b *Bot) Run() error {
 			continue
 		}
 
+		// Add ALL messages to history (not just @mentions)
+		b.historyMgr.AddMessage(llm.ChatMessage{
+			Role:    "user",
+			Content: broadcast.Content,
+		})
+
 		if strings.Contains(broadcast.Content, b.mention) {
 			// Extract the message content after the mention
 			prompt := extractPrompt(broadcast.Content, b.mention)
@@ -61,13 +69,19 @@ func (b *Bot) Run() error {
 
 			// Generate response with timeout
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			response, err := b.llmClient.Complete(ctx, prompt)
+			response, err := b.llmClient.Complete(ctx, prompt, b.historyMgr.Messages())
 			cancel()
 
 			if err != nil {
 				log.Printf("LLM error: %v", err)
 				continue
 			}
+
+			// Add response to history
+			b.historyMgr.AddMessage(llm.ChatMessage{
+				Role:    "assistant",
+				Content: response,
+			})
 
 			// Post response to server
 			if err := b.client.SendMessage(response); err != nil {

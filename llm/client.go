@@ -56,7 +56,7 @@ type Message struct {
 }
 
 // Complete sends a prompt to the LLM and returns the generated text.
-func (c *Client) Complete(ctx context.Context, prompt string) (string, error) {
+func (c *Client) Complete(ctx context.Context, prompt string, history []ChatMessage) (string, error) {
 	if c.HTTPClient == nil {
 		c.HTTPClient = &http.Client{}
 	}
@@ -65,8 +65,16 @@ func (c *Client) Complete(ctx context.Context, prompt string) (string, error) {
 
 	messages := []ChatMessage{
 		{Role: "system", Content: c.SystemPrompt},
-		{Role: "user", Content: prompt},
 	}
+
+	// Add history
+	messages = append(messages, history...)
+
+	// Add current prompt
+	messages = append(messages, ChatMessage{
+		Role:    "user",
+		Content: prompt,
+	})
 
 	req := ChatRequest{
 		Model:    c.Model,

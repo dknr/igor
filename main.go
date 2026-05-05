@@ -26,6 +26,8 @@ func main() {
 		cfg.LLM.Model,
 		cfg.LLM.APIKey,
 		cfg.Igor.SystemPrompt,
+		cfg.LLM.MaxHistory,
+		cfg.LLM.HistoryTimeout,
 	)
 
 	if err := bot.Run(); err != nil {
