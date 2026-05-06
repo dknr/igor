@@ -42,7 +42,15 @@ type ChatRequest struct {
 
 // ChatResponse is the response from the chat completions endpoint.
 type ChatResponse struct {
-	Choices []Choice `json:"choices"`
+	Choices        []Choice  `json:"choices"`
+	Usage          UsageInfo `json:"usage"`
+}
+
+// UsageInfo holds token usage information from the LLM.
+type UsageInfo struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
 }
 
 // Choice represents a single choice in the response.
@@ -55,8 +63,8 @@ type Message struct {
 	Content string `json:"content"`
 }
 
-// Complete sends a prompt to the LLM and returns the generated text.
-func (c *Client) Complete(ctx context.Context, prompt string, history []ChatMessage) (string, error) {
+// Complete sends a prompt to the LLM and returns the generated text, prompt tokens, and timing info.
+func (c *Client) Complete(ctx context.Context, prompt string, history []ChatMessage) (string, int, int, int, error) {
 	if c.HTTPClient == nil {
 		c.HTTPClient = &http.Client{}
 	}
@@ -83,12 +91,12 @@ func (c *Client) Complete(ctx context.Context, prompt string, history []ChatMess
 
 	body, err := json.Marshal(req)
 	if err != nil {
-		return "", fmt.Errorf("marshal request: %w", err)
+		return "", 0, 0, 0, fmt.Errorf("marshal request: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return "", fmt.Errorf("create request: %w", err)
+		return "", 0, 0, 0, fmt.Errorf("create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -99,22 +107,22 @@ func (c *Client) Complete(ctx context.Context, prompt string, history []ChatMess
 
 	resp, err := c.HTTPClient.Do(httpReq)
 	if err != nil {
-		return "", fmt.Errorf("send request: %w", err)
+		return "", 0, 0, 0, fmt.Errorf("send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return "", 0, 0, 0, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var chatResp ChatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&chatResp); err != nil {
-		return "", fmt.Errorf("decode response: %w", err)
+		return "", 0, 0, 0, fmt.Errorf("decode response: %w", err)
 	}
 
 	if len(chatResp.Choices) == 0 {
-		return "", fmt.Errorf("no choices in response")
+		return "", 0, 0, 0, fmt.Errorf("no choices in response")
 	}
 
-	return chatResp.Choices[0].Message.Content, nil
+	return chatResp.Choices[0].Message.Content, chatResp.Usage.PromptTokens, chatResp.Usage.CompletionTokens, chatResp.Usage.TotalTokens, nil
 }
