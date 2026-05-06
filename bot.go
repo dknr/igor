@@ -15,15 +15,17 @@ import (
 // Bot represents the igor chatbot.
 type Bot struct {
 	client     *grunt.Client
+	password   string
 	mention    string
 	llmClient  *llm.Client
 	historyMgr *HistoryManager
 }
 
 // NewBot creates a new Bot instance.
-func NewBot(serverAddr, userID, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string, maxHistory int, historyTimeout time.Duration) *Bot {
+func NewBot(serverAddr, userID, password, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string, maxHistory int, historyTimeout time.Duration) *Bot {
 	return &Bot{
 		client: grunt.NewClient(serverAddr, userID),
+		password: password,
 		mention: mention,
 		llmClient: llm.NewClient(llmBaseURL, llmModel, llmAPIKey, systemPrompt),
 		historyMgr: NewHistoryManager(maxHistory, historyTimeout),
@@ -32,8 +34,11 @@ func NewBot(serverAddr, userID, mention, llmBaseURL, llmModel, llmAPIKey, system
 
 // Run starts the bot, connecting to the server and listening for messages.
 func (b *Bot) Run() error {
-	if err := b.client.Register(); err != nil {
-		return fmt.Errorf("failed to register: %w", err)
+	// Register the user if not exists (handles 409 Conflict gracefully)
+	_ = b.client.Register(b.password)
+
+	if err := b.client.Login(b.password); err != nil {
+		return fmt.Errorf("failed to login: %w", err)
 	}
 
 	if err := b.client.Connect(); err != nil {

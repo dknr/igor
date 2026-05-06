@@ -10,6 +10,7 @@ Create `~/.config/igor/config.yaml`:
 grunt:
   server_addr: "http://localhost:54765"
   user_id: "igor"
+  password: "<your password>"
   mention: "@igor"
 llm:
   base_url: "http://localhost:8080"

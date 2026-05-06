@@ -20,6 +20,7 @@ type Config struct {
 type GruntConfig struct {
 	ServerAddr string `mapstructure:"server_addr"`
 	UserID     string `mapstructure:"user_id"`
+	Password   string `mapstructure:"password"`
 	Mention    string `mapstructure:"mention"`
 }
 

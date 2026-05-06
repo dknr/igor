@@ -21,6 +21,7 @@ func main() {
 	bot := NewBot(
 		cfg.Grunt.ServerAddr,
 		cfg.Grunt.UserID,
+		cfg.Grunt.Password,
 		cfg.Grunt.Mention,
 		cfg.LLM.BaseURL,
 		cfg.LLM.Model,
