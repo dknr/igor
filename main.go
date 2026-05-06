@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,9 +13,13 @@ func main() {
 	configPath := flag.String("config", "", "Config file path")
 	flag.Parse()
 
+	// Set up structured logging to stdout
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
+
 	cfg, err := Load(*configPath)
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		slog.Error("Failed to load config", "error", err)
+		os.Exit(1)
 	}
 
 	bot := NewBot(
@@ -32,7 +36,8 @@ func main() {
 	)
 
 	if err := bot.Run(); err != nil {
-		log.Fatalf("Bot error: %v", err)
+		slog.Error("Bot error", "error", err)
+		os.Exit(1)
 	}
 
 	// Wait for shutdown signal

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -50,12 +50,12 @@ func (b *Bot) Run() error {
 		return fmt.Errorf("failed to start listening")
 	}
 
-	log.Printf("Igor is listening for %s...", b.mention)
+	slog.Info("Igor is listening", "mention", b.mention)
 
 	for msgBytes := range messages {
 		var broadcast grunt.Broadcast
 		if err := json.Unmarshal(msgBytes, &broadcast); err != nil {
-			log.Printf("Error unmarshaling message: %v", err)
+			slog.Warn("Error unmarshaling message", "error", err)
 			continue
 		}
 
@@ -78,7 +78,7 @@ func (b *Bot) Run() error {
 			cancel()
 
 			if err != nil {
-				log.Printf("LLM error: %v", err)
+				slog.Error("LLM error", "error", err)
 				continue
 			}
 
@@ -90,7 +90,7 @@ func (b *Bot) Run() error {
 
 			// Post response to server
 			if err := b.client.SendMessage(response); err != nil {
-				log.Printf("Failed to send response: %v", err)
+				slog.Error("Failed to send response", "error", err)
 			}
 		}
 	}
