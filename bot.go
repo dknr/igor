@@ -81,18 +81,12 @@ func (b *Bot) Run() error {
 		})
 
 		if strings.Contains(broadcast.Content, b.mention) {
-			// Extract the message content after the mention
-			prompt := extractPrompt(broadcast.Content, b.mention)
-			if prompt == "" {
-				continue
-			}
-
-			slog.Info("Mention detected", "prompt", prompt)
+			slog.Info("Mention detected", "prompt", broadcast.Content)
 
 			// Generate response with timeout
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			slog.Info("Calling LLM", "prompt", prompt)
-			response, err := b.llmClient.Complete(ctx, prompt, b.historyMgr.Messages())
+			slog.Info("Calling LLM", "prompt", broadcast.Content)
+			response, promptTokens, completionTokens, totalTokens, err := b.llmClient.Complete(ctx, broadcast.Content, b.historyMgr.Messages())
 			cancel()
 
 			if err != nil {
@@ -100,7 +94,7 @@ func (b *Bot) Run() error {
 				continue
 			}
 
-			slog.Info("LLM response received", "response", response)
+			slog.Info("LLM response received", "response", response, "prompt_tokens", promptTokens, "completion_tokens", completionTokens, "total_tokens", totalTokens)
 
 			// Add response to history
 			b.historyMgr.AddMessage(llm.ChatMessage{
