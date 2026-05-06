@@ -22,6 +22,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	slog.Info("Igor starting up", "server", cfg.Grunt.ServerAddr, "user", cfg.Grunt.UserID)
+
 	bot := NewBot(
 		cfg.Grunt.ServerAddr,
 		cfg.Grunt.UserID,
