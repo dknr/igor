@@ -28,6 +28,7 @@ func main() {
 		cfg.Grunt.ServerAddr,
 		cfg.Grunt.UserID,
 		cfg.Grunt.Password,
+		cfg.Grunt.InviteCode,
 		cfg.Grunt.Mention,
 		cfg.LLM.BaseURL,
 		cfg.LLM.Model,

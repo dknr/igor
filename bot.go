@@ -8,26 +8,28 @@ import (
 	"strings"
 	"time"
 
-	"grunt"
+	"grunt/client"
 	"igor/llm"
 )
 
 // Bot represents the igor chatbot.
 type Bot struct {
-	client     *grunt.Client
+	client     *client.Client
 	password   string
+	inviteCode string
 	mention    string
 	llmClient  *llm.Client
 	historyMgr *HistoryManager
 }
 
 // NewBot creates a new Bot instance.
-func NewBot(serverAddr, userID, password, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string, maxHistory int, historyTimeout time.Duration) *Bot {
+func NewBot(serverAddr, userID, password, inviteCode, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string, maxHistory int, historyTimeout time.Duration) *Bot {
 	return &Bot{
-		client: grunt.NewClient(serverAddr, userID),
-		password: password,
-		mention: mention,
-		llmClient: llm.NewClient(llmBaseURL, llmModel, llmAPIKey, systemPrompt),
+		client:     client.NewClient(serverAddr, userID),
+		password:   password,
+		inviteCode: inviteCode,
+		mention:    mention,
+		llmClient:  llm.NewClient(llmBaseURL, llmModel, llmAPIKey, systemPrompt),
 		historyMgr: NewHistoryManager(maxHistory, historyTimeout),
 	}
 }
@@ -36,7 +38,7 @@ func NewBot(serverAddr, userID, password, mention, llmBaseURL, llmModel, llmAPIK
 func (b *Bot) Run() error {
 	// Register the user if not exists (handles 409 Conflict gracefully)
 	slog.Info("Attempting registration", "user", b.client.UserID)
-	if err := b.client.Register(b.password); err != nil {
+	if err := b.client.Register(b.password, b.inviteCode); err != nil {
 		if strings.Contains(err.Error(), "409") {
 			slog.Info("User already registered", "user", b.client.UserID)
 		} else {
@@ -52,11 +54,11 @@ func (b *Bot) Run() error {
 	}
 	slog.Info("Login successful", "user", b.client.UserID)
 
-	slog.Info("Attempting WebSocket connection", "server", b.client.ServerAddr)
+	slog.Info("Connecting to message stream", "server", b.client.ServerAddr)
 	if err := b.client.Connect(); err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
-	slog.Info("WebSocket connection established")
+	slog.Info("Message stream connected")
 
 	messages := b.client.StartListening()
 	if messages == nil {
@@ -76,7 +78,7 @@ func (b *Bot) Run() error {
 
 		switch envelope.Type {
 		case "message":
-			var broadcast grunt.Broadcast
+			var broadcast client.Broadcast
 			if err := json.Unmarshal(msgBytes, &broadcast); err != nil {
 				slog.Warn("Error unmarshaling broadcast", "error", err)
 				continue
@@ -125,12 +127,12 @@ func (b *Bot) Run() error {
 				}
 			}
 		case "event":
-			var evt grunt.Event
+			var evt client.Event
 			if err := json.Unmarshal(msgBytes, &evt); err == nil && evt.Event != "" {
 				slog.Info("Event received", "event", evt.Event, "user", evt.UserID, "client_id", evt.ClientID)
 			}
 		case "error":
-			var serr grunt.Error
+			var serr client.Error
 			if err := json.Unmarshal(msgBytes, &serr); err == nil && serr.Message != "" {
 				slog.Error("Server error", "message", serr.Message)
 			}
