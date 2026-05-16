@@ -22,13 +22,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	if cfg.Grunt.APIKey == "" {
+		slog.Error("No API key configured. Please set grunt.api_key in your config file.")
+		os.Exit(1)
+	}
+
 	slog.Info("Igor starting up", "server", cfg.Grunt.ServerAddr, "user", cfg.Grunt.UserID)
 
 	bot := NewBot(
 		cfg.Grunt.ServerAddr,
 		cfg.Grunt.UserID,
-		cfg.Grunt.Password,
-		cfg.Grunt.InviteCode,
+		cfg.Grunt.APIKey,
 		cfg.Grunt.Mention,
 		cfg.LLM.BaseURL,
 		cfg.LLM.Model,

@@ -20,8 +20,7 @@ type Config struct {
 type GruntConfig struct {
 	ServerAddr string `mapstructure:"server_addr"`
 	UserID     string `mapstructure:"user_id"`
-	Password   string `mapstructure:"password"`
-	InviteCode string `mapstructure:"invite_code"`
+	APIKey     string `mapstructure:"api_key"`
 	Mention    string `mapstructure:"mention"`
 }
 
@@ -45,7 +44,7 @@ func Load(configPath string) (*Config, error) {
 
 	// Set defaults
 	v.SetDefault("grunt.server_addr", "http://localhost:54765")
-	v.SetDefault("grunt.user_id", "igor")
+	v.SetDefault("grunt.api_key", "")
 	v.SetDefault("grunt.mention", "@igor")
 	v.SetDefault("llm.base_url", "http://localhost:8080")
 	v.SetDefault("llm.api_key", "")

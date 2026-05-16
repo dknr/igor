@@ -15,19 +15,17 @@ import (
 // Bot represents the igor chatbot.
 type Bot struct {
 	client     *client.Client
-	password   string
-	inviteCode string
+	apiKey     string
 	mention    string
 	llmClient  *llm.Client
 	historyMgr *HistoryManager
 }
 
 // NewBot creates a new Bot instance.
-func NewBot(serverAddr, userID, password, inviteCode, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string, maxHistory int, historyTimeout time.Duration) *Bot {
+func NewBot(serverAddr, userID, apiKey, mention, llmBaseURL, llmModel, llmAPIKey, systemPrompt string, maxHistory int, historyTimeout time.Duration) *Bot {
 	return &Bot{
 		client:     client.NewClient(serverAddr, userID),
-		password:   password,
-		inviteCode: inviteCode,
+		apiKey:     apiKey,
 		mention:    mention,
 		llmClient:  llm.NewClient(llmBaseURL, llmModel, llmAPIKey, systemPrompt),
 		historyMgr: NewHistoryManager(maxHistory, historyTimeout),
@@ -36,23 +34,13 @@ func NewBot(serverAddr, userID, password, inviteCode, mention, llmBaseURL, llmMo
 
 // Run starts the bot, connecting to the server and listening for messages.
 func (b *Bot) Run() error {
-	// Register the user if not exists (handles 409 Conflict gracefully)
-	slog.Info("Attempting registration", "user", b.client.UserID)
-	if err := b.client.Register(b.password, b.inviteCode); err != nil {
-		if strings.Contains(err.Error(), "409") {
-			slog.Info("User already registered", "user", b.client.UserID)
-		} else {
-			slog.Error("Registration failed", "error", err)
-		}
+	// Set API key on client
+	if b.apiKey != "" {
+		b.client.APIKey = b.apiKey
+		slog.Info("Using API key authentication")
 	} else {
-		slog.Info("Registration successful", "user", b.client.UserID)
+		return fmt.Errorf("no API key configured")
 	}
-
-	slog.Info("Attempting login", "user", b.client.UserID)
-	if err := b.client.Login(b.password); err != nil {
-		return fmt.Errorf("failed to login: %w", err)
-	}
-	slog.Info("Login successful", "user", b.client.UserID)
 
 	slog.Info("Connecting to message stream", "server", b.client.ServerAddr)
 	if err := b.client.Connect(); err != nil {
